@@ -1,0 +1,1704 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Auténticas Pizzas Artesanales y Algo Más - Menú Interactivo</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            box-sizing: border-box;
+        }
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@300;400;500;600&display=swap');
+        
+        .font-display { font-family: 'Playfair Display', serif; }
+        .font-body { font-family: 'Inter', sans-serif; }
+        
+        .pizza-card {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            transition: all 0.3s ease;
+        }
+        
+        .pizza-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+        
+        .color-margherita { background: linear-gradient(135deg, #ff6b6b, #ee5a24); }
+        .color-pepperoni { background: linear-gradient(135deg, #d63031, #a4161a); }
+        .color-quattro { background: linear-gradient(135deg, #6c5ce7, #5f3dc4); }
+        .color-vegetariana { background: linear-gradient(135deg, #00b894, #00a085); }
+        .color-hawaiana { background: linear-gradient(135deg, #fdcb6e, #e17055); }
+        .color-suprema { background: linear-gradient(135deg, #2d3436, #636e72); }
+        
+        .ingredient-tag {
+            background: rgba(255,255,255,0.9);
+            backdrop-filter: blur(10px);
+        }
+        
+        .cart-item {
+            animation: slideIn 0.3s ease-out;
+        }
+        
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        
+        .modal-backdrop {
+            backdrop-filter: blur(8px);
+            background: rgba(0,0,0,0.5);
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-amber-50 to-orange-100 min-h-full font-body">
+    <header class="bg-white shadow-lg sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 py-6">
+            <div class="flex justify-between items-center">
+                <div>
+                    <h1 class="font-display text-4xl font-bold text-gray-800">Auténticas Pizzas Artesanales</h1>
+                    <p class="text-gray-600 font-light">y Algo Más</p>
+                </div>
+                <button onclick="alternarCarrito()" class="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-full font-medium transition-colors relative">
+                    🛒 Carrito (<span id="contador-carrito">0</span>)
+                    <span id="total-carrito" class="block text-sm">G. 0</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Botón Panel Administrador -->
+    <button onclick="abrirPanelAdmin()" class="fixed bottom-6 left-6 bg-blue-600 hover:bg-blue-700 text-white p-4 rounded-full shadow-lg z-40 transition-all transform hover:scale-110">
+        ⚙️
+        <div class="text-xs mt-1">Admin</div>
+    </button>
+
+    <!-- Panel de Administración -->
+    <div id="panel-admin" class="fixed inset-0 modal-backdrop hidden items-center justify-center z-50">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-6xl w-full mx-4 max-h-full overflow-hidden">
+            <div class="p-6 border-b bg-blue-600 text-white">
+                <div class="flex justify-between items-center">
+                    <h3 class="font-display text-2xl font-semibold">🛠️ Panel de Administración</h3>
+                    <button onclick="cerrarPanelAdmin()" class="text-white hover:text-gray-200 text-2xl">×</button>
+                </div>
+            </div>
+            
+            <div class="flex h-full max-h-96">
+                <!-- Menú Lateral -->
+                <div class="w-64 bg-gray-100 p-4 border-r">
+                    <nav class="space-y-2">
+                        <button onclick="mostrarSeccionAdmin('productos')" class="boton-nav-admin w-full text-left px-4 py-3 rounded-lg hover:bg-blue-100 transition-colors">
+                            🍕 Gestión de Productos
+                        </button>
+                        <button onclick="mostrarSeccionAdmin('combos')" class="boton-nav-admin w-full text-left px-4 py-3 rounded-lg hover:bg-blue-100 transition-colors">
+                            🎉 Gestión de Combos
+                        </button>
+                        <button onclick="mostrarSeccionAdmin('configuracion')" class="boton-nav-admin w-full text-left px-4 py-3 rounded-lg hover:bg-blue-100 transition-colors">
+                            ⚙️ Configuración
+                        </button>
+                        <button onclick="mostrarSeccionAdmin('pedidos')" class="boton-nav-admin w-full text-left px-4 py-3 rounded-lg hover:bg-blue-100 transition-colors">
+                            📊 Pedidos
+                        </button>
+                    </nav>
+                </div>
+                
+                <!-- Contenido Principal -->
+                <div class="flex-1 p-6 overflow-y-auto">
+                    <!-- Sección Productos -->
+                    <div id="admin-productos" class="seccion-admin">
+                        <div class="flex justify-between items-center mb-6">
+                            <h4 class="text-xl font-semibold">Gestión de Productos</h4>
+                            <button onclick="mostrarFormularioAgregarProducto()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg">
+                                ➕ Agregar Producto
+                            </button>
+                        </div>
+                        
+                        <div id="lista-productos" class="space-y-4">
+                            <!-- Los productos se cargarán aquí -->
+                        </div>
+                        
+                        <!-- Formulario Agregar/Editar Producto -->
+                        <div id="formulario-producto" class="hidden bg-gray-50 p-6 rounded-lg mt-6">
+                            <h5 class="text-lg font-semibold mb-4">Agregar/Editar Producto</h5>
+                            <form id="datos-formulario-producto" class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Nombre del Producto *</label>
+                                    <input type="text" id="nombre-producto" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Precio (G.) *</label>
+                                    <input type="number" id="precio-producto" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                                </div>
+                                <div class="col-span-2">
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Descripción</label>
+                                    <textarea id="descripcion-producto" rows="2" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"></textarea>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Categoría</label>
+                                    <select id="categoria-producto" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                                        <option value="pizzas">Pizzas</option>
+                                        <option value="hamburguesas">Hamburguesas</option>
+                                        <option value="empanadas">Empanadas</option>
+                                        <option value="gaseosas">Gaseosas</option>
+                                        <option value="otros">Otros</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Emoji</label>
+                                    <input type="text" id="emoji-producto" placeholder="🍕" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                                </div>
+                                <div class="col-span-2 flex space-x-4">
+                                    <button type="button" onclick="guardarProducto()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg">
+                                        💾 Guardar
+                                    </button>
+                                    <button type="button" onclick="cancelarFormularioProducto()" class="bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded-lg">
+                                        ❌ Cancelar
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                    
+                    <!-- Sección Combos -->
+                    <div id="admin-combos" class="seccion-admin hidden">
+                        <div class="flex justify-between items-center mb-6">
+                            <h4 class="text-xl font-semibold">Gestión de Combos</h4>
+                            <button onclick="mostrarFormularioAgregarCombo()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg">
+                                ➕ Agregar Combo
+                            </button>
+                        </div>
+                        
+                        <div id="lista-combos" class="space-y-4">
+                            <!-- Los combos se cargarán aquí -->
+                        </div>
+                        
+                        <!-- Formulario Agregar/Editar Combo -->
+                        <div id="formulario-combo" class="hidden bg-gray-50 p-6 rounded-lg mt-6">
+                            <h5 class="text-lg font-semibold mb-4">Agregar/Editar Combo</h5>
+                            <form id="datos-formulario-combo" class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Nombre del Combo *</label>
+                                    <input type="text" id="nombre-combo" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Precio del Combo (G.) *</label>
+                                    <input type="number" id="precio-combo" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                                </div>
+                                <div class="col-span-2">
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Descripción del Combo</label>
+                                    <textarea id="descripcion-combo" rows="2" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"></textarea>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Precio Normal (G.)</label>
+                                    <input type="number" id="precio-original-combo" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Emoji</label>
+                                    <input type="text" id="emoji-combo" placeholder="🍕🥤" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                                </div>
+                                <div class="col-span-2 flex space-x-4">
+                                    <button type="button" onclick="guardarCombo()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg">
+                                        💾 Guardar
+                                    </button>
+                                    <button type="button" onclick="cancelarFormularioCombo()" class="bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded-lg">
+                                        ❌ Cancelar
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                    
+                    <!-- Sección Configuración -->
+                    <div id="admin-configuracion" class="seccion-admin hidden">
+                        <h4 class="text-xl font-semibold mb-6">Configuración General</h4>
+                        
+                        <div class="grid grid-cols-2 gap-6">
+                            <div class="bg-gray-50 p-4 rounded-lg">
+                                <h5 class="font-semibold mb-3">Información del Restaurante</h5>
+                                <div class="space-y-3">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Nombre del Restaurante</label>
+                                        <input type="text" id="nombre-restaurante" value="Auténticas Pizzas Artesanales" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Teléfono</label>
+                                        <input type="text" id="telefono-restaurante" value="0981 123 456" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="bg-gray-50 p-4 rounded-lg">
+                                <h5 class="font-semibold mb-3">Configuración de Delivery</h5>
+                                <div class="space-y-3">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Costo de Delivery (G.)</label>
+                                        <input type="number" id="costo-delivery" value="8000" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Tiempo Retiro (min)</label>
+                                        <input type="text" id="tiempo-retiro" value="25-30" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-6 flex space-x-4">
+                            <button onclick="guardarConfiguracion()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg">
+                                💾 Guardar Configuración
+                            </button>
+                            <button onclick="exportarDatos()" class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg">
+                                📤 Exportar Datos
+                            </button>
+                            <button onclick="reiniciarDatos()" class="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-lg">
+                                🗑️ Reiniciar Todo
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Sección Pedidos -->
+                    <div id="admin-pedidos" class="seccion-admin hidden">
+                        <h4 class="text-xl font-semibold mb-6">Historial de Pedidos</h4>
+                        <div id="estadisticas-pedidos" class="grid grid-cols-3 gap-4 mb-6">
+                            <!-- Estadísticas se cargarán aquí -->
+                        </div>
+                        <div id="historial-pedidos" class="space-y-4">
+                            <!-- Historial se cargará aquí -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <main class="max-w-7xl mx-auto px-4 py-8" id="menu-principal">
+        <section class="mb-12">
+            <h2 class="font-display text-3xl font-semibold text-gray-800 mb-8 text-center">Nuestras Pizzas Artesanales</h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <!-- Margherita -->
+                <div class="pizza-card rounded-2xl overflow-hidden shadow-lg">
+                    <div class="color-margherita h-32 flex items-center justify-center relative">
+                        <div class="text-white text-6xl">🍕</div>
+                        <div class="absolute top-4 right-4 ingredient-tag px-3 py-1 rounded-full text-sm font-medium text-gray-700">
+                            Clásica
+                        </div>
+                    </div>
+                    <div class="p-6">
+                        <h3 class="font-display text-2xl font-semibold text-gray-800 mb-2">Margherita</h3>
+                        <p class="text-gray-600 mb-4">Salsa de tomate, mozzarella fresca, albahaca, aceite de oliva</p>
+                        <div class="flex justify-between items-center">
+                            <span class="text-2xl font-bold text-red-600">G. 35.000</span>
+                            <button onclick="agregarAlCarrito('Margherita', 35000, 'color-margherita')" 
+                                    class="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-full font-medium transition-colors">
+                                Agregar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pepperoni -->
+                <div class="pizza-card rounded-2xl overflow-hidden shadow-lg">
+                    <div class="color-pepperoni h-32 flex items-center justify-center relative">
+                        <div class="text-white text-6xl">🍕</div>
+                        <div class="absolute top-4 right-4 ingredient-tag px-3 py-1 rounded-full text-sm font-medium text-gray-700">
+                            Picante
+                        </div>
+                    </div>
+                    <div class="p-6">
+                        <h3 class="font-display text-2xl font-semibold text-gray-800 mb-2">Pepperoni</h3>
+                        <p class="text-gray-600 mb-4">Salsa de tomate, mozzarella, pepperoni premium</p>
+                        <div class="flex justify-between items-center">
+                            <span class="text-2xl font-bold text-red-600">G. 42.000</span>
+                            <button onclick="agregarAlCarrito('Pepperoni', 42000, 'color-pepperoni')" 
+                                    class="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-full font-medium transition-colors">
+                                Agregar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quattro Stagioni -->
+                <div class="pizza-card rounded-2xl overflow-hidden shadow-lg">
+                    <div class="color-quattro h-32 flex items-center justify-center relative">
+                        <div class="text-white text-6xl">🍕</div>
+                        <div class="absolute top-4 right-4 ingredient-tag px-3 py-1 rounded-full text-sm font-medium text-gray-700">
+                            Gourmet
+                        </div>
+                    </div>
+                    <div class="p-6">
+                        <h3 class="font-display text-2xl font-semibold text-gray-800 mb-2">Quattro Stagioni</h3>
+                        <p class="text-gray-600 mb-4">Jamón, champiñones, alcachofas, aceitunas, mozzarella</p>
+                        <div class="flex justify-between items-center">
+                            <span class="text-2xl font-bold text-red-600">G. 48.000</span>
+                            <button onclick="agregarAlCarrito('Quattro Stagioni', 48000, 'color-quattro')" 
+                                    class="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-full font-medium transition-colors">
+                                Agregar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Hamburguesas -->
+        <section class="mb-12">
+            <h2 class="font-display text-3xl font-semibold text-gray-800 mb-8 text-center">Hamburguesas Artesanales</h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <!-- Clásica -->
+                <div class="pizza-card rounded-2xl overflow-hidden shadow-lg">
+                    <div class="bg-gradient-to-r from-yellow-500 to-orange-500 h-32 flex items-center justify-center relative">
+                        <div class="text-white text-6xl">🍔</div>
+                        <div class="absolute top-4 right-4 ingredient-tag px-3 py-1 rounded-full text-sm font-medium text-gray-700">
+                            Clásica
+                        </div>
+                    </div>
+                    <div class="p-6">
+                        <h3 class="font-display text-2xl font-semibold text-gray-800 mb-2">Hamburguesa Clásica</h3>
+                        <p class="text-gray-600 mb-4">Carne 150g, lechuga, tomate, cebolla, queso, salsa especial</p>
+                        <div class="flex justify-between items-center">
+                            <span class="text-2xl font-bold text-red-600">G. 32.000</span>
+                            <button onclick="agregarAlCarrito('Hamburguesa Clásica', 32000, 'bg-gradient-to-r from-yellow-500 to-orange-500')" 
+                                    class="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-full font-medium transition-colors">
+                                Agregar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Doble Carne -->
+                <div class="pizza-card rounded-2xl overflow-hidden shadow-lg">
+                    <div class="bg-gradient-to-r from-red-600 to-red-800 h-32 flex items-center justify-center relative">
+                        <div class="text-white text-6xl">🍔</div>
+                        <div class="absolute top-4 right-4 ingredient-tag px-3 py-1 rounded-full text-sm font-medium text-gray-700">
+                            Doble
+                        </div>
+                    </div>
+                    <div class="p-6">
+                        <h3 class="font-display text-2xl font-semibold text-gray-800 mb-2">Doble Carne</h3>
+                        <p class="text-gray-600 mb-4">Doble carne 300g, doble queso, bacon, cebolla caramelizada</p>
+                        <div class="flex justify-between items-center">
+                            <span class="text-2xl font-bold text-red-600">G. 45.000</span>
+                            <button onclick="agregarAlCarrito('Doble Carne', 45000, 'bg-gradient-to-r from-red-600 to-red-800')" 
+                                    class="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-full font-medium transition-colors">
+                                Agregar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- BBQ -->
+                <div class="pizza-card rounded-2xl overflow-hidden shadow-lg">
+                    <div class="bg-gradient-to-r from-amber-600 to-orange-700 h-32 flex items-center justify-center relative">
+                        <div class="text-white text-6xl">🍔</div>
+                        <div class="absolute top-4 right-4 ingredient-tag px-3 py-1 rounded-full text-sm font-medium text-gray-700">
+                            BBQ
+                        </div>
+                    </div>
+                    <div class="p-6">
+                        <h3 class="font-display text-2xl font-semibold text-gray-800 mb-2">BBQ Especial</h3>
+                        <p class="text-gray-600 mb-4">Carne 150g, salsa BBQ, aros de cebolla, bacon, queso cheddar</p>
+                        <div class="flex justify-between items-center">
+                            <span class="text-2xl font-bold text-red-600">G. 38.000</span>
+                            <button onclick="agregarAlCarrito('BBQ Especial', 38000, 'bg-gradient-to-r from-amber-600 to-orange-700')" 
+                                    class="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-full font-medium transition-colors">
+                                Agregar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Empanadas -->
+        <section class="mb-12">
+            <h2 class="font-display text-3xl font-semibold text-gray-800 mb-8 text-center">Empanadas de Carne</h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <!-- Empanada Individual -->
+                <div class="pizza-card rounded-2xl overflow-hidden shadow-lg">
+                    <div class="bg-gradient-to-r from-amber-500 to-yellow-600 h-24 flex items-center justify-center relative">
+                        <div class="text-white text-4xl">🥟</div>
+                    </div>
+                    <div class="p-4">
+                        <h3 class="font-display text-lg font-semibold text-gray-800 mb-2">Empanada Individual</h3>
+                        <p class="text-gray-600 mb-3 text-sm">Carne jugosa, cebolla, huevo duro, aceitunas</p>
+                        <div class="flex justify-between items-center">
+                            <span class="text-xl font-bold text-red-600">G. 8.000</span>
+                            <button onclick="agregarAlCarrito('Empanada Individual', 8000, 'bg-gradient-to-r from-amber-500 to-yellow-600')" 
+                                    class="bg-red-600 hover:bg-red-700 text-white px-4 py-1 rounded-full font-medium transition-colors text-sm">
+                                Agregar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pack 6 Empanadas -->
+                <div class="pizza-card rounded-2xl overflow-hidden shadow-lg">
+                    <div class="bg-gradient-to-r from-orange-500 to-red-500 h-24 flex items-center justify-center relative">
+                        <div class="text-white text-4xl">🥟</div>
+                        <div class="absolute top-2 right-2 ingredient-tag px-2 py-1 rounded-full text-xs font-medium text-gray-700">
+                            x6
+                        </div>
+                    </div>
+                    <div class="p-4">
+                        <h3 class="font-display text-lg font-semibold text-gray-800 mb-2">Pack 6 Empanadas</h3>
+                        <p class="text-gray-600 mb-3 text-sm">Media docena de empanadas de carne</p>
+                        <div class="flex justify-between items-center">
+                            <span class="text-xl font-bold text-red-600">G. 42.000</span>
+                            <button onclick="agregarAlCarrito('Pack 6 Empanadas', 42000, 'bg-gradient-to-r from-orange-500 to-red-500')" 
+                                    class="bg-red-600 hover:bg-red-700 text-white px-4 py-1 rounded-full font-medium transition-colors text-sm">
+                                Agregar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pack 12 Empanadas -->
+                <div class="pizza-card rounded-2xl overflow-hidden shadow-lg">
+                    <div class="bg-gradient-to-r from-red-600 to-red-800 h-24 flex items-center justify-center relative">
+                        <div class="text-white text-4xl">🥟</div>
+                        <div class="absolute top-2 right-2 ingredient-tag px-2 py-1 rounded-full text-xs font-medium text-gray-700">
+                            x12
+                        </div>
+                    </div>
+                    <div class="p-4">
+                        <h3 class="font-display text-lg font-semibold text-gray-800 mb-2">Docena Empanadas</h3>
+                        <p class="text-gray-600 mb-3 text-sm">Docena completa de empanadas de carne</p>
+                        <div class="flex justify-between items-center">
+                            <span class="text-xl font-bold text-red-600">G. 78.000</span>
+                            <button onclick="agregarAlCarrito('Docena Empanadas', 78000, 'bg-gradient-to-r from-red-600 to-red-800')" 
+                                    class="bg-red-600 hover:bg-red-700 text-white px-4 py-1 rounded-full font-medium transition-colors text-sm">
+                                Agregar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pack Familiar -->
+                <div class="pizza-card rounded-2xl overflow-hidden shadow-lg">
+                    <div class="bg-gradient-to-r from-purple-600 to-pink-600 h-24 flex items-center justify-center relative">
+                        <div class="text-white text-4xl">🥟</div>
+                        <div class="absolute top-2 right-2 ingredient-tag px-2 py-1 rounded-full text-xs font-medium text-gray-700">
+                            x24
+                        </div>
+                    </div>
+                    <div class="p-4">
+                        <h3 class="font-display text-lg font-semibold text-gray-800 mb-2">Pack Familiar</h3>
+                        <p class="text-gray-600 mb-3 text-sm">24 empanadas para toda la familia</p>
+                        <div class="flex justify-between items-center">
+                            <span class="text-xl font-bold text-red-600">G. 140.000</span>
+                            <button onclick="agregarAlCarrito('Pack Familiar 24', 140000, 'bg-gradient-to-r from-purple-600 to-pink-600')" 
+                                    class="bg-red-600 hover:bg-red-700 text-white px-4 py-1 rounded-full font-medium transition-colors text-sm">
+                                Agregar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Gaseosas -->
+        <section class="mb-12">
+            <h2 class="font-display text-3xl font-semibold text-gray-800 mb-8 text-center">Gaseosas Coca-Cola 1L</h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <!-- Coca-Cola -->
+                <div class="pizza-card rounded-2xl overflow-hidden shadow-lg">
+                    <div class="bg-gradient-to-r from-red-600 to-red-800 h-24 flex items-center justify-center relative">
+                        <div class="text-white text-4xl">🥤</div>
+                    </div>
+                    <div class="p-4">
+                        <h3 class="font-display text-lg font-semibold text-gray-800 mb-2">Coca-Cola 1L</h3>
+                        <p class="text-gray-600 mb-3 text-sm">La chispa de la vida</p>
+                        <div class="flex justify-between items-center">
+                            <span class="text-xl font-bold text-red-600">G. 12.000</span>
+                            <button onclick="agregarAlCarrito('Coca-Cola 1L', 12000, 'bg-gradient-to-r from-red-600 to-red-800')" 
+                                    class="bg-red-600 hover:bg-red-700 text-white px-4 py-1 rounded-full font-medium transition-colors text-sm">
+                                Agregar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sprite -->
+                <div class="pizza-card rounded-2xl overflow-hidden shadow-lg">
+                    <div class="bg-gradient-to-r from-green-500 to-green-700 h-24 flex items-center justify-center relative">
+                        <div class="text-white text-4xl">🥤</div>
+                    </div>
+                    <div class="p-4">
+                        <h3 class="font-display text-lg font-semibold text-gray-800 mb-2">Sprite 1L</h3>
+                        <p class="text-gray-600 mb-3 text-sm">Refrescante sabor limón</p>
+                        <div class="flex justify-between items-center">
+                            <span class="text-xl font-bold text-red-600">G. 12.000</span>
+                            <button onclick="agregarAlCarrito('Sprite 1L', 12000, 'bg-gradient-to-r from-green-500 to-green-700')" 
+                                    class="bg-red-600 hover:bg-red-700 text-white px-4 py-1 rounded-full font-medium transition-colors text-sm">
+                                Agregar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Fanta -->
+                <div class="pizza-card rounded-2xl overflow-hidden shadow-lg">
+                    <div class="bg-gradient-to-r from-orange-500 to-orange-700 h-24 flex items-center justify-center relative">
+                        <div class="text-white text-4xl">🥤</div>
+                    </div>
+                    <div class="p-4">
+                        <h3 class="font-display text-lg font-semibold text-gray-800 mb-2">Fanta 1L</h3>
+                        <p class="text-gray-600 mb-3 text-sm">Sabor naranja natural</p>
+                        <div class="flex justify-between items-center">
+                            <span class="text-xl font-bold text-red-600">G. 12.000</span>
+                            <button onclick="agregarAlCarrito('Fanta 1L', 12000, 'bg-gradient-to-r from-orange-500 to-orange-700')" 
+                                    class="bg-red-600 hover:bg-red-700 text-white px-4 py-1 rounded-full font-medium transition-colors text-sm">
+                                Agregar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Coca-Cola Zero -->
+                <div class="pizza-card rounded-2xl overflow-hidden shadow-lg">
+                    <div class="bg-gradient-to-r from-gray-800 to-black h-24 flex items-center justify-center relative">
+                        <div class="text-white text-4xl">🥤</div>
+                        <div class="absolute top-2 right-2 ingredient-tag px-2 py-1 rounded-full text-xs font-medium text-gray-700">
+                            Zero
+                        </div>
+                    </div>
+                    <div class="p-4">
+                        <h3 class="font-display text-lg font-semibold text-gray-800 mb-2">Coca-Cola Zero 1L</h3>
+                        <p class="text-gray-600 mb-3 text-sm">Mismo sabor, cero azúcar</p>
+                        <div class="flex justify-between items-center">
+                            <span class="text-xl font-bold text-red-600">G. 12.000</span>
+                            <button onclick="agregarAlCarrito('Coca-Cola Zero 1L', 12000, 'bg-gradient-to-r from-gray-800 to-black')" 
+                                    class="bg-red-600 hover:bg-red-700 text-white px-4 py-1 rounded-full font-medium transition-colors text-sm">
+                                Agregar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Combos Especiales -->
+        <section class="mb-12">
+            <h2 class="font-display text-3xl font-semibold text-gray-800 mb-8 text-center">🎉 Combos Especiales - ¡Ahorra Más!</h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <!-- Combo Pizza -->
+                <div class="pizza-card rounded-2xl overflow-hidden shadow-lg border-4 border-yellow-400">
+                    <div class="bg-gradient-to-r from-purple-600 to-pink-600 h-32 flex items-center justify-center relative">
+                        <div class="text-white text-5xl">🍕🥤</div>
+                        <div class="absolute top-4 right-4 bg-yellow-400 text-black px-3 py-1 rounded-full text-sm font-bold">
+                            ¡COMBO!
+                        </div>
+                    </div>
+                    <div class="p-6">
+                        <h3 class="font-display text-2xl font-semibold text-gray-800 mb-2">Combo Pizza Clásica</h3>
+                        <p class="text-gray-600 mb-4">Pizza Margherita + Gaseosa 1L a elección</p>
+                        <div class="text-sm text-gray-500 mb-4">
+                            <span class="line-through">Precio normal: G. 47.000</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-2xl font-bold text-green-600">G. 42.000</span>
+                            <button onclick="agregarComboAlCarrito('Combo Pizza Clásica', 42000, 'Pizza Margherita + Gaseosa 1L')" 
+                                    class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-full font-medium transition-colors">
+                                Agregar
+                            </button>
+                        </div>
+                        <p class="text-xs text-green-600 font-semibold mt-2">¡Ahorras G. 5.000!</p>
+                    </div>
+                </div>
+
+                <!-- Combo Hamburguesa -->
+                <div class="pizza-card rounded-2xl overflow-hidden shadow-lg border-4 border-yellow-400">
+                    <div class="bg-gradient-to-r from-blue-600 to-indigo-600 h-32 flex items-center justify-center relative">
+                        <div class="text-white text-5xl">🍔🥤</div>
+                        <div class="absolute top-4 right-4 bg-yellow-400 text-black px-3 py-1 rounded-full text-sm font-bold">
+                            ¡COMBO!
+                        </div>
+                    </div>
+                    <div class="p-6">
+                        <h3 class="font-display text-2xl font-semibold text-gray-800 mb-2">Combo Burger</h3>
+                        <p class="text-gray-600 mb-4">Hamburguesa Clásica + Gaseosa 1L a elección</p>
+                        <div class="text-sm text-gray-500 mb-4">
+                            <span class="line-through">Precio normal: G. 44.000</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-2xl font-bold text-green-600">G. 38.000</span>
+                            <button onclick="agregarComboAlCarrito('Combo Burger', 38000, 'Hamburguesa Clásica + Gaseosa 1L')" 
+                                    class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-full font-medium transition-colors">
+                                Agregar
+                            </button>
+                        </div>
+                        <p class="text-xs text-green-600 font-semibold mt-2">¡Ahorras G. 6.000!</p>
+                    </div>
+                </div>
+
+                <!-- Combo Familiar -->
+                <div class="pizza-card rounded-2xl overflow-hidden shadow-lg border-4 border-yellow-400">
+                    <div class="bg-gradient-to-r from-red-600 to-orange-600 h-32 flex items-center justify-center relative">
+                        <div class="text-white text-5xl">🍕🥟🥤</div>
+                        <div class="absolute top-4 right-4 bg-yellow-400 text-black px-3 py-1 rounded-full text-sm font-bold">
+                            ¡SÚPER!
+                        </div>
+                    </div>
+                    <div class="p-6">
+                        <h3 class="font-display text-2xl font-semibold text-gray-800 mb-2">Combo Familiar</h3>
+                        <p class="text-gray-600 mb-4">Pizza Grande + 6 Empanadas + 2 Gaseosas 1L</p>
+                        <div class="text-sm text-gray-500 mb-4">
+                            <span class="line-through">Precio normal: G. 94.000</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-2xl font-bold text-green-600">G. 85.000</span>
+                            <button onclick="agregarComboAlCarrito('Combo Familiar', 85000, 'Pizza Grande + 6 Empanadas + 2 Gaseosas 1L')" 
+                                    class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-full font-medium transition-colors">
+                                Agregar
+                            </button>
+                        </div>
+                        <p class="text-xs text-green-600 font-semibold mt-2">¡Ahorras G. 9.000!</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Personalizar Pizza -->
+        <section class="bg-white rounded-2xl shadow-lg p-8 mb-8">
+            <h2 class="font-display text-3xl font-semibold text-gray-800 mb-6 text-center">🎨 Crea Tu Pizza Personalizada</h2>
+            <div class="text-center">
+                <p class="text-gray-600 mb-6">Comienza con nuestra base artesanal y agrega tus ingredientes favoritos</p>
+                <button onclick="abrirPizzaPersonalizada()" class="bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white px-8 py-4 rounded-full font-semibold text-lg transition-all transform hover:scale-105">
+                    Personalizar Pizza - Desde G. 30.000
+                </button>
+            </div>
+        </section>
+    </main>
+
+    <!-- Carrito Lateral -->
+    <div id="carrito-lateral" class="fixed right-0 top-0 h-full w-96 bg-white shadow-2xl transform translate-x-full transition-transform duration-300 z-50">
+        <div class="p-6 border-b">
+            <div class="flex justify-between items-center">
+                <h3 class="font-display text-2xl font-semibold">Tu Pedido</h3>
+                <button onclick="alternarCarrito()" class="text-gray-500 hover:text-gray-700 text-2xl">×</button>
+            </div>
+        </div>
+        
+        <div id="items-carrito" class="p-6 h-full overflow-y-auto pb-32">
+            <div id="carrito-vacio" class="text-center text-gray-500 mt-20">
+                <div class="text-6xl mb-4">🛒</div>
+                <p>Tu carrito está vacío</p>
+                <p class="text-sm">Agrega algunas pizzas deliciosas</p>
+            </div>
+        </div>
+        
+        <div id="pie-carrito" class="absolute bottom-0 left-0 right-0 p-6 bg-white border-t">
+            <div class="mb-4">
+                <div class="flex justify-between text-lg font-semibold">
+                    <span>Total:</span>
+                    <span id="total-carrito-lateral">G. 0</span>
+                </div>
+            </div>
+            <button onclick="procesarPedido()" class="w-full bg-green-600 hover:bg-green-700 text-white py-4 rounded-full font-semibold text-lg transition-colors">
+                Hacer el Pedido
+            </button>
+        </div>
+    </div>
+
+    <!-- Modal Datos del Cliente -->
+    <div id="modal-cliente" class="fixed inset-0 modal-backdrop hidden items-center justify-center z-50">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full mx-4 max-h-full overflow-y-auto">
+            <div class="p-6 border-b">
+                <div class="flex justify-between items-center">
+                    <h3 class="font-display text-2xl font-semibold">Datos del Pedido</h3>
+                    <button onclick="cerrarModalCliente()" class="text-gray-500 hover:text-gray-700 text-2xl">×</button>
+                </div>
+            </div>
+            
+            <form id="formulario-cliente" class="p-6">
+                <!-- Datos Personales -->
+                <div class="mb-6">
+                    <h4 class="font-semibold text-lg mb-3 text-gray-800">📋 Datos Personales</h4>
+                    <div class="space-y-4">
+                        <div>
+                            <label for="nombre-cliente" class="block text-sm font-medium text-gray-700 mb-2">Nombre completo *</label>
+                            <input type="text" id="nombre-cliente" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent" placeholder="Tu nombre">
+                        </div>
+                        
+                        <div>
+                            <label for="telefono-cliente" class="block text-sm font-medium text-gray-700 mb-2">Teléfono *</label>
+                            <input type="tel" id="telefono-cliente" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent" placeholder="0981 123 456">
+                        </div>
+                        
+                        <div>
+                            <label for="email-cliente" class="block text-sm font-medium text-gray-700 mb-2">Email (opcional)</label>
+                            <input type="email" id="email-cliente" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent" placeholder="tu@email.com">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Datos de Facturación -->
+                <div class="mb-6">
+                    <h4 class="font-semibold text-lg mb-3 text-gray-800">🧾 Datos de Facturación</h4>
+                    <div class="space-y-3 mb-4">
+                        <label class="flex items-center space-x-3 cursor-pointer">
+                            <input type="radio" name="tipo-factura" value="ticket" class="text-red-600" checked>
+                            <div class="flex-1">
+                                <div class="font-medium">🎫 Ticket (Sin factura)</div>
+                                <div class="text-sm text-gray-600">Para consumo personal</div>
+                            </div>
+                        </label>
+                        <label class="flex items-center space-x-3 cursor-pointer">
+                            <input type="radio" name="tipo-factura" value="factura" class="text-red-600">
+                            <div class="flex-1">
+                                <div class="font-medium">📄 Factura Legal</div>
+                                <div class="text-sm text-gray-600">Para empresas o deducción fiscal</div>
+                            </div>
+                        </label>
+                    </div>
+                    
+                    <div id="seccion-factura" class="space-y-4 hidden">
+                        <div>
+                            <label for="nombre-empresa" class="block text-sm font-medium text-gray-700 mb-2">Razón Social *</label>
+                            <input type="text" id="nombre-empresa" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent" placeholder="Nombre de la empresa">
+                        </div>
+                        
+                        <div>
+                            <label for="numero-ruc" class="block text-sm font-medium text-gray-700 mb-2">RUC *</label>
+                            <input type="text" id="numero-ruc" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent" placeholder="12345678-9">
+                        </div>
+                        
+                        <div>
+                            <label for="direccion-empresa" class="block text-sm font-medium text-gray-700 mb-2">Dirección Fiscal *</label>
+                            <textarea id="direccion-empresa" rows="2" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent" placeholder="Dirección registrada en SET"></textarea>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Tipo de Entrega -->
+                <div class="mb-6">
+                    <h4 class="font-semibold text-lg mb-3 text-gray-800">🚚 Tipo de Entrega</h4>
+                    <div class="space-y-3">
+                        <label class="flex items-center space-x-3 cursor-pointer">
+                            <input type="radio" name="entrega" value="retiro" class="text-red-600" checked>
+                            <div class="flex-1">
+                                <div class="font-medium">🏪 Retiro en local</div>
+                                <div class="text-sm text-gray-600">Gratis - Listo en 25-30 min</div>
+                            </div>
+                        </label>
+                        <label class="flex items-center space-x-3 cursor-pointer">
+                            <input type="radio" name="entrega" value="delivery" class="text-red-600">
+                            <div class="flex-1">
+                                <div class="font-medium">🚚 Delivery a domicilio</div>
+                                <div class="text-sm text-gray-600">G. 8.000 - Listo en 35-45 min</div>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+                
+                <div id="seccion-direccion" class="mb-6 hidden">
+                    <label for="direccion-cliente" class="block text-sm font-medium text-gray-700 mb-2">Dirección de entrega *</label>
+                    <textarea id="direccion-cliente" rows="3" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent" placeholder="Calle, número, barrio, referencias..."></textarea>
+                </div>
+                
+                <div class="border-t pt-4">
+                    <div class="flex justify-between items-center mb-4">
+                        <span class="text-lg font-semibold">Total del pedido:</span>
+                        <span id="total-pedido" class="text-2xl font-bold text-red-600">G. 0</span>
+                    </div>
+                    <button type="button" onclick="procederAlPago()" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-full font-semibold transition-colors">
+                        💳 Proceder al Pago
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal de Pago -->
+    <div id="modal-pago" class="fixed inset-0 modal-backdrop hidden items-center justify-center z-50">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4">
+            <div class="p-6 border-b">
+                <div class="flex justify-between items-center">
+                    <h3 class="font-display text-2xl font-semibold">💳 Método de Pago</h3>
+                    <button onclick="cerrarModalPago()" class="text-gray-500 hover:text-gray-700 text-2xl">×</button>
+                </div>
+            </div>
+            
+            <div class="p-6">
+                <div class="mb-6">
+                    <h4 class="font-semibold text-lg mb-4">Selecciona tu método de pago:</h4>
+                    <div class="space-y-3">
+                        <label class="flex items-center space-x-3 cursor-pointer p-3 border rounded-lg hover:bg-gray-50">
+                            <input type="radio" name="metodo-pago" value="efectivo" class="text-red-600" checked>
+                            <div class="flex-1">
+                                <div class="font-medium">💵 Efectivo</div>
+                                <div class="text-sm text-gray-600">Pago al recibir el pedido</div>
+                            </div>
+                        </label>
+                        
+                        <label class="flex items-center space-x-3 cursor-pointer p-3 border rounded-lg hover:bg-gray-50">
+                            <input type="radio" name="metodo-pago" value="transferencia" class="text-red-600">
+                            <div class="flex-1">
+                                <div class="font-medium">🏦 Transferencia Bancaria</div>
+                                <div class="text-sm text-gray-600">Banco Continental - Cta: 123456789</div>
+                            </div>
+                        </label>
+                        
+                        <label class="flex items-center space-x-3 cursor-pointer p-3 border rounded-lg hover:bg-gray-50">
+                            <input type="radio" name="metodo-pago" value="giros" class="text-red-600">
+                            <div class="flex-1">
+                                <div class="font-medium">📱 Giros Tigo</div>
+                                <div class="text-sm text-gray-600">0981 123 456</div>
+                            </div>
+                        </label>
+                        
+                        <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                            <div class="text-sm text-yellow-800">
+                                <strong>⚠️ Nota:</strong> Este es un sistema de demostración. Los métodos de pago mostrados son solo ejemplos y no procesan pagos reales.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="detalles-transferencia" class="mb-6 hidden bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <h5 class="font-semibold mb-2">Datos para transferencia:</h5>
+                    <div class="text-sm space-y-1">
+                        <p><strong>Banco:</strong> Continental</p>
+                        <p><strong>Cuenta:</strong> 123-456-789</p>
+                        <p><strong>Titular:</strong> Auténticas Pizzas S.A.</p>
+                        <p><strong>Monto:</strong> <span id="monto-transferencia">G. 0</span></p>
+                    </div>
+                </div>
+                
+                <div id="detalles-giros" class="mb-6 hidden bg-green-50 border border-green-200 rounded-lg p-4">
+                    <h5 class="font-semibold mb-2">Datos para Giros Tigo:</h5>
+                    <div class="text-sm space-y-1">
+                        <p><strong>Número:</strong> 0981 123 456</p>
+                        <p><strong>Nombre:</strong> Juan Pérez</p>
+                        <p><strong>Monto:</strong> <span id="monto-giros">G. 0</span></p>
+                    </div>
+                </div>
+                
+                <div class="border-t pt-4">
+                    <div class="flex justify-between items-center mb-4">
+                        <span class="text-lg font-semibold">Total a pagar:</span>
+                        <span id="total-pago" class="text-2xl font-bold text-red-600">G. 0</span>
+                    </div>
+                    <button type="button" onclick="confirmarPago()" class="w-full bg-green-600 hover:bg-green-700 text-white py-3 rounded-full font-semibold transition-colors">
+                        ✅ Confirmar Pedido y Pago
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Pizza Personalizada -->
+    <div id="modal-pizza-personalizada" class="fixed inset-0 modal-backdrop hidden items-center justify-center z-50">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full mx-4 max-h-full overflow-y-auto">
+            <div class="p-6 border-b">
+                <div class="flex justify-between items-center">
+                    <h3 class="font-display text-2xl font-semibold">Personaliza Tu Pizza</h3>
+                    <button onclick="cerrarPizzaPersonalizada()" class="text-gray-500 hover:text-gray-700 text-2xl">×</button>
+                </div>
+            </div>
+            
+            <div class="p-6">
+                <div class="mb-6">
+                    <label for="nombre-pizza" class="block text-sm font-medium text-gray-700 mb-2">Nombre de tu pizza:</label>
+                    <input type="text" id="nombre-pizza" placeholder="Mi Pizza Especial" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent">
+                </div>
+                
+                <div class="mb-6">
+                    <h4 class="font-semibold text-lg mb-3">Tamaño:</h4>
+                    <div class="grid grid-cols-3 gap-3">
+                        <label class="cursor-pointer">
+                            <input type="radio" name="tamano" value="30000" class="sr-only" checked>
+                            <div class="border-2 border-gray-300 rounded-lg p-3 text-center hover:border-red-500 transition-colors opcion-tamano">
+                                <div class="font-medium">Mediana</div>
+                                <div class="text-sm text-gray-600">G. 30.000</div>
+                            </div>
+                        </label>
+                        <label class="cursor-pointer">
+                            <input type="radio" name="tamano" value="40000" class="sr-only">
+                            <div class="border-2 border-gray-300 rounded-lg p-3 text-center hover:border-red-500 transition-colors opcion-tamano">
+                                <div class="font-medium">Grande</div>
+                                <div class="text-sm text-gray-600">G. 40.000</div>
+                            </div>
+                        </label>
+                        <label class="cursor-pointer">
+                            <input type="radio" name="tamano" value="50000" class="sr-only">
+                            <div class="border-2 border-gray-300 rounded-lg p-3 text-center hover:border-red-500 transition-colors opcion-tamano">
+                                <div class="font-medium">Familiar</div>
+                                <div class="text-sm text-gray-600">G. 50.000</div>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="mb-6">
+                    <h4 class="font-semibold text-lg mb-3">Ingredientes Extra (G. 5.000 c/u):</h4>
+                    <div class="grid grid-cols-2 gap-3">
+                        <label class="flex items-center space-x-2 cursor-pointer">
+                            <input type="checkbox" value="5000" data-name="Pepperoni Extra" class="checkbox-ingrediente">
+                            <span>🍕 Pepperoni Extra</span>
+                        </label>
+                        <label class="flex items-center space-x-2 cursor-pointer">
+                            <input type="checkbox" value="5000" data-name="Champiñones" class="checkbox-ingrediente">
+                            <span>🍄 Champiñones</span>
+                        </label>
+                        <label class="flex items-center space-x-2 cursor-pointer">
+                            <input type="checkbox" value="5000" data-name="Pimientos" class="checkbox-ingrediente">
+                            <span>🌶️ Pimientos</span>
+                        </label>
+                        <label class="flex items-center space-x-2 cursor-pointer">
+                            <input type="checkbox" value="5000" data-name="Cebolla" class="checkbox-ingrediente">
+                            <span>🧅 Cebolla</span>
+                        </label>
+                        <label class="flex items-center space-x-2 cursor-pointer">
+                            <input type="checkbox" value="5000" data-name="Aceitunas" class="checkbox-ingrediente">
+                            <span>🫒 Aceitunas</span>
+                        </label>
+                        <label class="flex items-center space-x-2 cursor-pointer">
+                            <input type="checkbox" value="5000" data-name="Jamón" class="checkbox-ingrediente">
+                            <span>🥓 Jamón</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="border-t pt-4">
+                    <div class="flex justify-between items-center mb-4">
+                        <span class="text-lg font-semibold">Total:</span>
+                        <span id="total-personalizada" class="text-2xl font-bold text-red-600">G. 30.000</span>
+                    </div>
+                    <button onclick="agregarPizzaPersonalizada()" class="w-full bg-red-600 hover:bg-red-700 text-white py-3 rounded-full font-semibold transition-colors">
+                        Agregar al Carrito
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let carrito = [];
+        let totalCarrito = 0;
+        let productos = [];
+        let combos = [];
+        let editandoProductoActual = null;
+        let editandoComboActual = null;
+
+        // Inicializar productos por defecto
+        function inicializarProductosPorDefecto() {
+            const productosDefecto = [
+                { id: 1, name: 'Margherita', price: 35000, description: 'Salsa de tomate, mozzarella fresca, albahaca, aceite de oliva', category: 'pizzas', emoji: '🍕', colorClass: 'color-margherita', status: 'active' },
+                { id: 2, name: 'Pepperoni', price: 42000, description: 'Salsa de tomate, mozzarella, pepperoni premium', category: 'pizzas', emoji: '🍕', colorClass: 'color-pepperoni', status: 'active' },
+                { id: 3, name: 'Quattro Stagioni', price: 48000, description: 'Jamón, champiñones, alcachofas, aceitunas, mozzarella', category: 'pizzas', emoji: '🍕', colorClass: 'color-quattro', status: 'active' }
+            ];
+
+            const combosDefecto = [
+                { id: 1, name: 'Combo Pizza Clásica', price: 42000, description: 'Pizza Margherita + Gaseosa 1L a elección', originalPrice: 47000, emoji: '🍕🥤', colorClass: 'bg-gradient-to-r from-purple-600 to-pink-600', status: 'active' }
+            ];
+
+            if (!localStorage.getItem('productos_restaurante')) {
+                localStorage.setItem('productos_restaurante', JSON.stringify(productosDefecto));
+            }
+            if (!localStorage.getItem('combos_restaurante')) {
+                localStorage.setItem('combos_restaurante', JSON.stringify(combosDefecto));
+            }
+
+            productos = JSON.parse(localStorage.getItem('productos_restaurante') || '[]');
+            combos = JSON.parse(localStorage.getItem('combos_restaurante') || '[]');
+        }
+
+        // Funciones del Panel de Administración
+        function abrirPanelAdmin() {
+            document.getElementById('panel-admin').classList.remove('hidden');
+            document.getElementById('panel-admin').classList.add('flex');
+            mostrarSeccionAdmin('productos');
+            cargarListaProductos();
+            cargarListaCombos();
+            cargarHistorialPedidos();
+        }
+
+        function cerrarPanelAdmin() {
+            document.getElementById('panel-admin').classList.add('hidden');
+            document.getElementById('panel-admin').classList.remove('flex');
+        }
+
+        function mostrarSeccionAdmin(seccion) {
+            // Ocultar todas las secciones
+            document.querySelectorAll('.seccion-admin').forEach(s => s.classList.add('hidden'));
+            // Mostrar la sección seleccionada
+            document.getElementById(`admin-${seccion}`).classList.remove('hidden');
+            
+            // Actualizar botones de navegación
+            document.querySelectorAll('.boton-nav-admin').forEach(btn => {
+                btn.classList.remove('bg-blue-100', 'text-blue-700');
+            });
+            event.target.classList.add('bg-blue-100', 'text-blue-700');
+        }
+
+        function cargarListaProductos() {
+            const listaProductos = document.getElementById('lista-productos');
+            listaProductos.innerHTML = productos.map(producto => `
+                <div class="bg-white border rounded-lg p-4 flex justify-between items-center ${producto.status === 'inactive' ? 'opacity-50' : ''}">
+                    <div class="flex items-center space-x-4">
+                        <div class="${producto.colorClass} w-12 h-12 rounded-lg flex items-center justify-center text-white text-xl">
+                            ${producto.emoji}
+                        </div>
+                        <div>
+                            <h5 class="font-semibold">${producto.name}</h5>
+                            <p class="text-sm text-gray-600">${producto.description}</p>
+                            <p class="text-lg font-bold text-red-600">G. ${producto.price.toLocaleString()}</p>
+                        </div>
+                    </div>
+                    <div class="flex space-x-2">
+                        <button onclick="editarProducto(${producto.id})" class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm">
+                            ✏️ Editar
+                        </button>
+                        <button onclick="eliminarProducto(${producto.id})" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm">
+                            🗑️ Eliminar
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function cargarListaCombos() {
+            const listaCombos = document.getElementById('lista-combos');
+            listaCombos.innerHTML = combos.map(combo => `
+                <div class="bg-white border rounded-lg p-4 flex justify-between items-center ${combo.status === 'inactive' ? 'opacity-50' : ''}">
+                    <div class="flex items-center space-x-4">
+                        <div class="${combo.colorClass} w-12 h-12 rounded-lg flex items-center justify-center text-white text-xl">
+                            ${combo.emoji}
+                        </div>
+                        <div>
+                            <h5 class="font-semibold">${combo.name}</h5>
+                            <p class="text-sm text-gray-600">${combo.description}</p>
+                            <div class="flex items-center space-x-2">
+                                <p class="text-lg font-bold text-green-600">G. ${combo.price.toLocaleString()}</p>
+                                ${combo.originalPrice ? `<span class="text-sm text-gray-500 line-through">G. ${combo.originalPrice.toLocaleString()}</span>` : ''}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex space-x-2">
+                        <button onclick="editarCombo(${combo.id})" class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm">
+                            ✏️ Editar
+                        </button>
+                        <button onclick="eliminarCombo(${combo.id})" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm">
+                            🗑️ Eliminar
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function mostrarFormularioAgregarProducto() {
+            editandoProductoActual = null;
+            document.getElementById('formulario-producto').classList.remove('hidden');
+            document.getElementById('datos-formulario-producto').reset();
+        }
+
+        function editarProducto(id) {
+            editandoProductoActual = productos.find(p => p.id === id);
+            if (editandoProductoActual) {
+                document.getElementById('nombre-producto').value = editandoProductoActual.name;
+                document.getElementById('precio-producto').value = editandoProductoActual.price;
+                document.getElementById('descripcion-producto').value = editandoProductoActual.description;
+                document.getElementById('categoria-producto').value = editandoProductoActual.category;
+                document.getElementById('emoji-producto').value = editandoProductoActual.emoji;
+                document.getElementById('formulario-producto').classList.remove('hidden');
+            }
+        }
+
+        function guardarProducto() {
+            const nombre = document.getElementById('nombre-producto').value.trim();
+            const precio = parseInt(document.getElementById('precio-producto').value);
+            const descripcion = document.getElementById('descripcion-producto').value.trim();
+            const categoria = document.getElementById('categoria-producto').value;
+            const emoji = document.getElementById('emoji-producto').value || '🍕';
+
+            if (!nombre || !precio) {
+                alert('Por favor completa el nombre y precio del producto.');
+                return;
+            }
+
+            if (editandoProductoActual) {
+                // Editar producto existente
+                const indice = productos.findIndex(p => p.id === editandoProductoActual.id);
+                productos[indice] = { ...editandoProductoActual, name: nombre, price: precio, description: descripcion, category: categoria, emoji: emoji };
+            } else {
+                // Agregar nuevo producto
+                const nuevoProducto = {
+                    id: Date.now(),
+                    name: nombre, price: precio, description: descripcion, category: categoria, emoji: emoji,
+                    colorClass: 'color-margherita',
+                    status: 'active'
+                };
+                productos.push(nuevoProducto);
+            }
+
+            localStorage.setItem('productos_restaurante', JSON.stringify(productos));
+            cargarListaProductos();
+            cancelarFormularioProducto();
+            alert('Producto guardado exitosamente.');
+        }
+
+        function cancelarFormularioProducto() {
+            document.getElementById('formulario-producto').classList.add('hidden');
+            document.getElementById('datos-formulario-producto').reset();
+            editandoProductoActual = null;
+        }
+
+        function eliminarProducto(id) {
+            if (confirm('¿Estás seguro de que quieres eliminar este producto?')) {
+                productos = productos.filter(p => p.id !== id);
+                localStorage.setItem('productos_restaurante', JSON.stringify(productos));
+                cargarListaProductos();
+                alert('Producto eliminado exitosamente.');
+            }
+        }
+
+        // Funciones para Combos
+        function mostrarFormularioAgregarCombo() {
+            editandoComboActual = null;
+            document.getElementById('formulario-combo').classList.remove('hidden');
+            document.getElementById('datos-formulario-combo').reset();
+        }
+
+        function editarCombo(id) {
+            editandoComboActual = combos.find(c => c.id === id);
+            if (editandoComboActual) {
+                document.getElementById('nombre-combo').value = editandoComboActual.name;
+                document.getElementById('precio-combo').value = editandoComboActual.price;
+                document.getElementById('descripcion-combo').value = editandoComboActual.description;
+                document.getElementById('precio-original-combo').value = editandoComboActual.originalPrice || '';
+                document.getElementById('emoji-combo').value = editandoComboActual.emoji;
+                document.getElementById('formulario-combo').classList.remove('hidden');
+            }
+        }
+
+        function guardarCombo() {
+            const nombre = document.getElementById('nombre-combo').value.trim();
+            const precio = parseInt(document.getElementById('precio-combo').value);
+            const descripcion = document.getElementById('descripcion-combo').value.trim();
+            const precioOriginal = parseInt(document.getElementById('precio-original-combo').value) || null;
+            const emoji = document.getElementById('emoji-combo').value || '🍕🥤';
+
+            if (!nombre || !precio) {
+                alert('Por favor completa el nombre y precio del combo.');
+                return;
+            }
+
+            if (editandoComboActual) {
+                // Editar combo existente
+                const indice = combos.findIndex(c => c.id === editandoComboActual.id);
+                combos[indice] = { ...editandoComboActual, name: nombre, price: precio, description: descripcion, originalPrice: precioOriginal, emoji: emoji };
+            } else {
+                // Agregar nuevo combo
+                const nuevoCombo = {
+                    id: Date.now(),
+                    name: nombre, price: precio, description: descripcion, originalPrice: precioOriginal, emoji: emoji,
+                    colorClass: 'bg-gradient-to-r from-purple-600 to-pink-600',
+                    status: 'active'
+                };
+                combos.push(nuevoCombo);
+            }
+
+            localStorage.setItem('combos_restaurante', JSON.stringify(combos));
+            cargarListaCombos();
+            cancelarFormularioCombo();
+            alert('Combo guardado exitosamente.');
+        }
+
+        function cancelarFormularioCombo() {
+            document.getElementById('formulario-combo').classList.add('hidden');
+            document.getElementById('datos-formulario-combo').reset();
+            editandoComboActual = null;
+        }
+
+        function eliminarCombo(id) {
+            if (confirm('¿Estás seguro de que quieres eliminar este combo?')) {
+                combos = combos.filter(c => c.id !== id);
+                localStorage.setItem('combos_restaurante', JSON.stringify(combos));
+                cargarListaCombos();
+                alert('Combo eliminado exitosamente.');
+            }
+        }
+
+        function guardarConfiguracion() {
+            const configuracion = {
+                nombreRestaurante: document.getElementById('nombre-restaurante').value,
+                telefonoRestaurante: document.getElementById('telefono-restaurante').value,
+                costoDelivery: parseInt(document.getElementById('costo-delivery').value),
+                tiempoRetiro: document.getElementById('tiempo-retiro').value
+            };
+            
+            localStorage.setItem('configuracion_restaurante', JSON.stringify(configuracion));
+            alert('Configuración guardada exitosamente.');
+        }
+
+        function exportarDatos() {
+            const datos = {
+                productos: productos,
+                combos: combos,
+                pedidos: JSON.parse(localStorage.getItem('pedidos_pizza') || '[]'),
+                configuracion: JSON.parse(localStorage.getItem('configuracion_restaurante') || '{}')
+            };
+            
+            const datosStr = JSON.stringify(datos, null, 2);
+            const datosBlob = new Blob([datosStr], {type: 'application/json'});
+            const url = URL.createObjectURL(datosBlob);
+            const enlace = document.createElement('a');
+            enlace.href = url;
+            enlace.download = 'respaldo_datos_restaurante.json';
+            enlace.click();
+            
+            alert('Datos exportados exitosamente.');
+        }
+
+        function reiniciarDatos() {
+            if (confirm('¿Estás seguro de que quieres eliminar TODOS los datos? Esta acción no se puede deshacer.')) {
+                localStorage.removeItem('productos_restaurante');
+                localStorage.removeItem('combos_restaurante');
+                localStorage.removeItem('pedidos_pizza');
+                localStorage.removeItem('configuracion_restaurante');
+                
+                inicializarProductosPorDefecto();
+                cargarListaProductos();
+                cargarListaCombos();
+                alert('Datos reiniciados exitosamente.');
+            }
+        }
+
+        function cargarHistorialPedidos() {
+            const pedidos = JSON.parse(localStorage.getItem('pedidos_pizza') || '[]');
+            const totalPedidos = pedidos.length;
+            const ingresosTotales = pedidos.reduce((suma, pedido) => suma + pedido.total, 0);
+
+            document.getElementById('estadisticas-pedidos').innerHTML = `
+                <div class="bg-blue-100 p-4 rounded-lg text-center">
+                    <div class="text-2xl font-bold text-blue-600">${totalPedidos}</div>
+                    <div class="text-sm text-blue-800">Total Pedidos</div>
+                </div>
+                <div class="bg-green-100 p-4 rounded-lg text-center">
+                    <div class="text-2xl font-bold text-green-600">G. ${ingresosTotales.toLocaleString()}</div>
+                    <div class="text-sm text-green-800">Ingresos Totales</div>
+                </div>
+                <div class="bg-purple-100 p-4 rounded-lg text-center">
+                    <div class="text-2xl font-bold text-purple-600">${totalPedidos > 0 ? Math.round(ingresosTotales / totalPedidos).toLocaleString() : '0'}</div>
+                    <div class="text-sm text-purple-800">Promedio por Pedido</div>
+                </div>
+            `;
+
+            document.getElementById('historial-pedidos').innerHTML = pedidos.slice(-5).reverse().map(pedido => `
+                <div class="bg-white border rounded-lg p-4">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <h5 class="font-semibold">Pedido #${pedido.orderNumber}</h5>
+                            <p class="text-sm text-gray-600">${pedido.customerName} - ${pedido.customerPhone}</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-lg font-bold text-green-600">G. ${pedido.total.toLocaleString()}</p>
+                        </div>
+                    </div>
+                </div>
+            `).join('') || '<p class="text-gray-500 text-center">No hay pedidos registrados.</p>';
+        }
+
+        function alternarCarrito() {
+            const lateral = document.getElementById('carrito-lateral');
+            lateral.classList.toggle('translate-x-full');
+        }
+
+        function agregarAlCarrito(nombre, precio, claseColor) {
+            const item = {
+                id: Date.now(),
+                name: nombre,
+                price: precio,
+                colorClass: claseColor,
+                quantity: 1
+            };
+            
+            carrito.push(item);
+            actualizarCarrito();
+            
+            // Mostrar feedback visual
+            const boton = event.target;
+            const textoOriginal = boton.textContent;
+            boton.textContent = '¡Agregado!';
+            boton.classList.add('bg-green-600');
+            setTimeout(() => {
+                boton.textContent = textoOriginal;
+                boton.classList.remove('bg-green-600');
+            }, 1000);
+        }
+
+        function agregarComboAlCarrito(nombre, precio, descripcion) {
+            const item = {
+                id: Date.now(),
+                name: nombre,
+                price: precio,
+                colorClass: 'bg-gradient-to-r from-green-600 to-teal-600',
+                quantity: 1,
+                description: descripcion
+            };
+            
+            carrito.push(item);
+            actualizarCarrito();
+        }
+
+        function actualizarCarrito() {
+            const contadorCarrito = document.getElementById('contador-carrito');
+            const totalCarritoHeader = document.getElementById('total-carrito');
+            const totalCarritoLateral = document.getElementById('total-carrito-lateral');
+            const itemsCarrito = document.getElementById('items-carrito');
+            const carritoVacio = document.getElementById('carrito-vacio');
+            
+            totalCarrito = carrito.reduce((suma, item) => suma + (item.price * item.quantity), 0);
+            
+            contadorCarrito.textContent = carrito.length;
+            totalCarritoHeader.textContent = `G. ${totalCarrito.toLocaleString()}`;
+            totalCarritoLateral.textContent = `G. ${totalCarrito.toLocaleString()}`;
+            
+            if (carrito.length === 0) {
+                carritoVacio.style.display = 'block';
+                itemsCarrito.innerHTML = '';
+                itemsCarrito.appendChild(carritoVacio);
+            } else {
+                carritoVacio.style.display = 'none';
+                const carritoHTML = carrito.map(item => `
+                    <div class="cart-item border-b pb-4 mb-4">
+                        <div class="flex items-center space-x-3">
+                            <div class="${item.colorClass} w-12 h-12 rounded-lg flex items-center justify-center text-white font-bold">
+                                🍕
+                            </div>
+                            <div class="flex-1">
+                                <h4 class="font-medium">${item.name}</h4>
+                                <p class="text-sm text-gray-600">G. ${item.price.toLocaleString()}</p>
+                                ${item.description ? `<p class="text-xs text-gray-500">${item.description}</p>` : ''}
+                            </div>
+                            <button onclick="eliminarDelCarrito(${item.id})" class="text-red-500 hover:text-red-700">
+                                🗑️
+                            </button>
+                        </div>
+                    </div>
+                `).join('');
+                
+                itemsCarrito.innerHTML = carritoHTML + `<div id="carrito-vacio" class="text-center text-gray-500 mt-20" style="display: none;">
+                    <div class="text-6xl mb-4">🛒</div>
+                    <p>Tu carrito está vacío</p>
+                    <p class="text-sm">Agrega algunas pizzas deliciosas</p>
+                </div>`;
+            }
+        }
+
+        function eliminarDelCarrito(itemId) {
+            carrito = carrito.filter(item => item.id !== itemId);
+            actualizarCarrito();
+        }
+
+        function procesarPedido() {
+            if (carrito.length === 0) {
+                alert('Tu carrito está vacío. Agrega algunos productos primero.');
+                return;
+            }
+            
+            // Abrir modal de datos del cliente
+            abrirModalCliente();
+        }
+
+        function abrirModalCliente() {
+            document.getElementById('modal-cliente').classList.remove('hidden');
+            document.getElementById('modal-cliente').classList.add('flex');
+            
+            // Actualizar total en el modal
+            document.getElementById('total-pedido').textContent = `G. ${totalCarrito.toLocaleString()}`;
+        }
+
+        function cerrarModalCliente() {
+            document.getElementById('modal-cliente').classList.add('hidden');
+            document.getElementById('modal-cliente').classList.remove('flex');
+        }
+
+        function procederAlPago() {
+            // Validar campos requeridos
+            const nombre = document.getElementById('nombre-cliente').value.trim();
+            const telefono = document.getElementById('telefono-cliente').value.trim();
+            const direccion = document.getElementById('direccion-cliente').value.trim();
+            const tipoEntrega = document.querySelector('input[name="entrega"]:checked').value;
+            const tipoFactura = document.querySelector('input[name="tipo-factura"]:checked').value;
+            
+            if (!nombre || !telefono) {
+                alert('Por favor completa tu nombre y teléfono.');
+                return;
+            }
+            
+            if (tipoEntrega === 'delivery' && !direccion) {
+                alert('Por favor ingresa tu dirección para el delivery.');
+                return;
+            }
+            
+            // Validar datos de facturación si es necesario
+            if (tipoFactura === 'factura') {
+                const nombreEmpresa = document.getElementById('nombre-empresa').value.trim();
+                const numeroRuc = document.getElementById('numero-ruc').value.trim();
+                const direccionEmpresa = document.getElementById('direccion-empresa').value.trim();
+                
+                if (!nombreEmpresa || !numeroRuc || !direccionEmpresa) {
+                    alert('Por favor completa todos los datos de facturación.');
+                    return;
+                }
+            }
+            
+            // Calcular total final
+            const costoDelivery = tipoEntrega === 'delivery' ? 8000 : 0;
+            const totalFinal = totalCarrito + costoDelivery;
+            
+            // Actualizar totales en modal de pago
+            document.getElementById('total-pago').textContent = `G. ${totalFinal.toLocaleString()}`;
+            document.getElementById('monto-transferencia').textContent = `G. ${totalFinal.toLocaleString()}`;
+            document.getElementById('monto-giros').textContent = `G. ${totalFinal.toLocaleString()}`;
+            
+            // Abrir modal de pago
+            abrirModalPago();
+        }
+
+        function abrirModalPago() {
+            document.getElementById('modal-pago').classList.remove('hidden');
+            document.getElementById('modal-pago').classList.add('flex');
+        }
+
+        function cerrarModalPago() {
+            document.getElementById('modal-pago').classList.add('hidden');
+            document.getElementById('modal-pago').classList.remove('flex');
+        }
+
+        function confirmarPago() {
+            // Obtener todos los datos
+            const nombre = document.getElementById('nombre-cliente').value.trim();
+            const telefono = document.getElementById('telefono-cliente').value.trim();
+            const email = document.getElementById('email-cliente').value.trim();
+            const direccion = document.getElementById('direccion-cliente').value.trim();
+            const tipoEntrega = document.querySelector('input[name="entrega"]:checked').value;
+            const tipoFactura = document.querySelector('input[name="tipo-factura"]:checked').value;
+            const metodoPago = document.querySelector('input[name="metodo-pago"]:checked').value;
+            
+            // Datos de facturación
+            let infoFactura = '';
+            if (tipoFactura === 'factura') {
+                const nombreEmpresa = document.getElementById('nombre-empresa').value.trim();
+                const numeroRuc = document.getElementById('numero-ruc').value.trim();
+                const direccionEmpresa = document.getElementById('direccion-empresa').value.trim();
+                infoFactura = `\n\nDatos de Facturación:\nRazón Social: ${nombreEmpresa}\nRUC: ${numeroRuc}\nDirección Fiscal: ${direccionEmpresa}`;
+            }
+            
+            // Generar número de pedido
+            const numeroPedido = Math.floor(Math.random() * 9000) + 1000;
+            
+            const resumenPedido = carrito.map(item => `${item.name} - G. ${item.price.toLocaleString()}`).join('\n');
+            const infoEntrega = tipoEntrega === 'delivery' ? `\nDirección de entrega: ${direccion}` : '\nRetiro en local';
+            const costoDelivery = tipoEntrega === 'delivery' ? 8000 : 0;
+            const totalFinal = totalCarrito + costoDelivery;
+            
+            // Información del método de pago
+            let infoPago = '';
+            switch(metodoPago) {
+                case 'efectivo':
+                    infoPago = '\nMétodo de pago: Efectivo (al recibir)';
+                    break;
+                case 'transferencia':
+                    infoPago = '\nMétodo de pago: Transferencia Bancaria\nRealiza la transferencia a: Banco Continental - Cta: 123-456-789';
+                    break;
+                case 'giros':
+                    infoPago = '\nMétodo de pago: Giros Tigo\nEnvía el pago a: 0981 123 456 (Juan Pérez)';
+                    break;
+            }
+            
+            const pedido = {
+                orderNumber: numeroPedido,
+                customerName: nombre,
+                customerPhone: telefono,
+                customerEmail: email,
+                items: carrito,
+                total: totalFinal,
+                date: new Date().toISOString(),
+                paymentMethod: metodoPago,
+                deliveryType: tipoEntrega,
+                address: direccion
+            };
+            
+            // Guardar pedido
+            const pedidos = JSON.parse(localStorage.getItem('pedidos_pizza') || '[]');
+            pedidos.push(pedido);
+            localStorage.setItem('pedidos_pizza', JSON.stringify(pedidos));
+            
+            const mensaje = `¡Pedido #${numeroPedido} confirmado y pago procesado!\n\nCliente: ${nombre}\nTeléfono: ${telefono}${email ? `\nEmail: ${email}` : ''}${infoEntrega}${infoFactura}${infoPago}\n\nResumen del pedido:\n${resumenPedido}${tipoEntrega === 'delivery' ? '\nDelivery: G. 8.000' : ''}\n\nTotal pagado: G. ${totalFinal.toLocaleString()}\nTipo de comprobante: ${tipoFactura === 'factura' ? 'Factura Legal' : 'Ticket'}\n\nTiempo estimado: ${tipoEntrega === 'delivery' ? '35-45' : '25-30'} minutos\n\n¡Gracias por elegir Auténticas Pizzas Artesanales!`;
+            
+            alert(mensaje);
+            
+            // Limpiar carrito y cerrar modales
+            carrito = [];
+            actualizarCarrito();
+            cerrarModalPago();
+            cerrarModalCliente();
+            alternarCarrito();
+            
+            // Limpiar formularios
+            document.getElementById('formulario-cliente').reset();
+            document.querySelector('input[name="metodo-pago"][value="efectivo"]').checked = true;
+        }
+
+        function abrirPizzaPersonalizada() {
+            document.getElementById('modal-pizza-personalizada').classList.remove('hidden');
+            document.getElementById('modal-pizza-personalizada').classList.add('flex');
+            actualizarTotalPersonalizada();
+        }
+
+        function cerrarPizzaPersonalizada() {
+            document.getElementById('modal-pizza-personalizada').classList.add('hidden');
+            document.getElementById('modal-pizza-personalizada').classList.remove('flex');
+        }
+
+        function actualizarTotalPersonalizada() {
+            const inputsTamano = document.querySelectorAll('input[name="tamano"]');
+            const checkboxesIngredientes = document.querySelectorAll('.checkbox-ingrediente');
+            
+            let precioBase = 30000;
+            inputsTamano.forEach(input => {
+                if (input.checked) {
+                    precioBase = parseInt(input.value);
+                }
+            });
+            
+            let precioExtras = 0;
+            checkboxesIngredientes.forEach(checkbox => {
+                if (checkbox.checked) {
+                    precioExtras += parseInt(checkbox.value);
+                }
+            });
+            
+            const total = precioBase + precioExtras;
+            document.getElementById('total-personalizada').textContent = `G. ${total.toLocaleString()}`;
+        }
+
+        function agregarPizzaPersonalizada() {
+            const nombrePizza = document.getElementById('nombre-pizza').value || 'Pizza Personalizada';
+            const inputsTamano = document.querySelectorAll('input[name="tamano"]');
+            const checkboxesIngredientes = document.querySelectorAll('.checkbox-ingrediente:checked');
+            
+            let precioBase = 30000;
+            inputsTamano.forEach(input => {
+                if (input.checked) {
+                    precioBase = parseInt(input.value);
+                }
+            });
+            
+            let precioExtras = 0;
+            let extras = [];
+            checkboxesIngredientes.forEach(checkbox => {
+                precioExtras += parseInt(checkbox.value);
+                extras.push(checkbox.dataset.name);
+            });
+            
+            const precioTotal = precioBase + precioExtras;
+            const descripcion = extras.length > 0 ? `Con: ${extras.join(', ')}` : 'Pizza base';
+            
+            const item = {
+                id: Date.now(),
+                name: nombrePizza,
+                price: precioTotal,
+                colorClass: 'color-margherita',
+                quantity: 1,
+                description: descripcion
+            };
+            
+            carrito.push(item);
+            actualizarCarrito();
+            cerrarPizzaPersonalizada();
+            
+            // Reset form
+            document.getElementById('nombre-pizza').value = '';
+            document.querySelectorAll('.checkbox-ingrediente').forEach(cb => cb.checked = false);
+            document.querySelector('input[name="tamano"]').checked = true;
+        }
+
+        // Event listeners
+        document.addEventListener('change', function(e) {
+            if (e.target.name === 'tamano' || e.target.classList.contains('checkbox-ingrediente')) {
+                actualizarTotalPersonalizada();
+            }
+            
+            if (e.target.name === 'tamano') {
+                document.querySelectorAll('.opcion-tamano').forEach(opcion => {
+                    opcion.classList.remove('border-red-500', 'bg-red-50');
+                });
+                e.target.parentElement.querySelector('.opcion-tamano').classList.add('border-red-500', 'bg-red-50');
+            }
+            
+            // Mostrar/ocultar campo de dirección según tipo de entrega
+            if (e.target.name === 'entrega') {
+                const seccionDireccion = document.getElementById('seccion-direccion');
+                const totalPedido = document.getElementById('total-pedido');
+                
+                if (e.target.value === 'delivery') {
+                    seccionDireccion.classList.remove('hidden');
+                    totalPedido.textContent = `G. ${(totalCarrito + 8000).toLocaleString()}`;
+                } else {
+                    seccionDireccion.classList.add('hidden');
+                    totalPedido.textContent = `G. ${totalCarrito.toLocaleString()}`;
+                }
+            }
+            
+            // Mostrar/ocultar campos de facturación
+            if (e.target.name === 'tipo-factura') {
+                const seccionFactura = document.getElementById('seccion-factura');
+                
+                if (e.target.value === 'factura') {
+                    seccionFactura.classList.remove('hidden');
+                } else {
+                    seccionFactura.classList.add('hidden');
+                }
+            }
+            
+            // Mostrar detalles del método de pago
+            if (e.target.name === 'metodo-pago') {
+                const detallesTransferencia = document.getElementById('detalles-transferencia');
+                const detallesGiros = document.getElementById('detalles-giros');
+                
+                // Ocultar todos los detalles
+                detallesTransferencia.classList.add('hidden');
+                detallesGiros.classList.add('hidden');
+                
+                // Mostrar el detalle correspondiente
+                if (e.target.value === 'transferencia') {
+                    detallesTransferencia.classList.remove('hidden');
+                } else if (e.target.value === 'giros') {
+                    detallesGiros.classList.remove('hidden');
+                }
+            }
+        });
+
+        // Cerrar modales al hacer clic fuera
+        document.getElementById('modal-pizza-personalizada').addEventListener('click', function(e) {
+            if (e.target === this) {
+                cerrarPizzaPersonalizada();
+            }
+        });
+        
+        document.getElementById('modal-cliente').addEventListener('click', function(e) {
+            if (e.target === this) {
+                cerrarModalCliente();
+            }
+        });
+        
+        document.getElementById('modal-pago').addEventListener('click', function(e) {
+            if (e.target === this) {
+                cerrarModalPago();
+            }
+        });
+
+        // Inicializar
+        inicializarProductosPorDefecto();
+        actualizarCarrito();
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'994dccdce6b6116a',t:'MTc2MTUyMjA0Mi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
